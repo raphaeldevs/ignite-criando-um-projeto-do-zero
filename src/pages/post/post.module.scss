@@ -19,17 +19,11 @@
     }
 
     main {
-      p {
-        margin-bottom: 1.5rem;
+      p a {
+        color: var(--highlight);
 
-        font-size: 1.125rem;
-
-        text-align: justify;
-
-        strong {
-          font-weight: 400;
-
-          color: var(--highlight);
+        &:hover {
+          text-decoration: underline;
         }
       }
 
