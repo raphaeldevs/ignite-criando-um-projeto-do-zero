@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import { GetStaticPaths, GetStaticProps } from 'next';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 
 import { format } from 'date-fns';
@@ -23,6 +24,7 @@ interface Post {
   first_publication_date: string | null;
   data: {
     title: string;
+    subtitle: string;
     banner: {
       url: string;
     };
@@ -43,6 +45,8 @@ interface PostProps {
 export default function Post({ post }: PostProps): JSX.Element {
   const router = useRouter();
 
+  const commentsSection = useRef<HTMLDivElement>(null);
+
   const readTime = useMemo(() => {
     const HUMAN_READ_WORDS_PER_MINUTE = 200;
 
@@ -61,8 +65,27 @@ export default function Post({ post }: PostProps): JSX.Element {
     return Math.ceil(words?.length / HUMAN_READ_WORDS_PER_MINUTE);
   }, [post]);
 
+  useEffect(() => {
+    const utteranceScript = document.createElement('script');
+
+    utteranceScript.src = 'https://utteranc.es/client.js';
+    utteranceScript.crossOrigin = 'anonymous';
+    utteranceScript.async = true;
+    utteranceScript.setAttribute('repo', 'raphaeldevs/spacetraveling-comments');
+    utteranceScript.setAttribute('issue-term', 'title');
+    utteranceScript.setAttribute('theme', 'github-dark');
+
+    commentsSection.current?.appendChild(utteranceScript);
+  }, []);
+
   return (
     <>
+      <Head>
+        <meta name="description" content={post?.data?.subtitle} />
+
+        <title>{router.isFallback ? 'Carregando...' : post?.data.title}</title>
+      </Head>
+
       <Header />
 
       <div className={styles.container}>
@@ -102,6 +125,8 @@ export default function Post({ post }: PostProps): JSX.Element {
               </div>
             ))}
           </main>
+
+          <footer ref={commentsSection} />
         </article>
       </div>
     </>
