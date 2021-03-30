@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 
 import { GetStaticPaths, GetStaticProps } from 'next';
 import Head from 'next/head';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 
 import { format } from 'date-fns';
@@ -40,9 +41,10 @@ interface Post {
 
 interface PostProps {
   post: Post;
+  preview: boolean;
 }
 
-export default function Post({ post }: PostProps): JSX.Element {
+export default function Post({ post, preview }: PostProps): JSX.Element {
   const router = useRouter();
 
   const commentsSection = useRef<HTMLDivElement>(null);
@@ -83,28 +85,41 @@ export default function Post({ post }: PostProps): JSX.Element {
       <Head>
         <meta name="description" content={post?.data?.subtitle} />
 
-        <title>{router.isFallback ? 'Carregando...' : post?.data.title}</title>
+        <title>{post?.data?.title ?? 'SpaceTraveling'}</title>
       </Head>
 
       <Header />
 
       <div className={styles.container}>
-        <img src={post?.data.banner.url} alt={post?.data.author} />
+        <img
+          src={post?.data?.banner.url ?? '/images/banner.webp'}
+          alt={post?.data?.author ?? 'Banner'}
+        />
 
         <article className={commonStyles.container}>
           <header>
-            <h1>{router.isFallback ? 'Carregando...' : post?.data.title}</h1>
+            <h1>
+              {router.isFallback
+                ? 'Carregando...'
+                : post?.data?.title || 'Título'}
+            </h1>
             <div className={commonStyles.postInfo}>
               <time>
                 <FiCalendar />
-                {format(new Date(post?.first_publication_date), 'dd MMM yyyy', {
-                  locale: ptBR,
-                }) ?? 'Data de publicação'}
+                {post?.first_publication_date
+                  ? format(
+                      new Date(post?.first_publication_date),
+                      'dd MMM yyyy',
+                      {
+                        locale: ptBR,
+                      }
+                    )
+                  : 'Data de publicação'}
               </time>
 
               <span>
                 <FiUser />
-                {post?.data.author ?? 'Autor'}
+                {post?.data?.author ?? 'Autor'}
               </span>
 
               <span>
@@ -127,6 +142,14 @@ export default function Post({ post }: PostProps): JSX.Element {
           </main>
 
           <footer ref={commentsSection} />
+
+          {preview && (
+            <aside>
+              <Link href="/api/exit-preview">
+                <a>Sair do modo Preview</a>
+              </Link>
+            </aside>
+          )}
         </article>
       </div>
     </>
@@ -154,11 +177,29 @@ export const getStaticPaths: GetStaticPaths = async () => {
   };
 };
 
-export const getStaticProps: GetStaticProps = async ({ params }) => {
+export const getStaticProps: GetStaticProps = async ({
+  params,
+  preview = null,
+  previewData = {},
+}) => {
   const { slug } = params;
 
+  const { ref } = previewData;
+
   const prismic = getPrismicClient();
-  const response = await prismic.getByUID('posts', String(slug), {});
+  const response =
+    preview && ref
+      ? await prismic.getSingle('posts', { ref })
+      : (await prismic.getByUID('posts', String(slug), {})) || null;
+
+  if (!response) {
+    return {
+      redirect: {
+        destination: '/',
+        permanent: false,
+      },
+    };
+  }
 
   const post = {
     uid: response.uid,
@@ -177,6 +218,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   return {
     props: {
       post,
+      preview,
     },
   };
 };
