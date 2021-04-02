@@ -42,9 +42,23 @@ interface Post {
 interface PostProps {
   post: Post;
   preview: boolean;
+  pagination: {
+    nextPage: {
+      title: string;
+      href: string;
+    };
+    prevPage: {
+      title: string;
+      href: string;
+    };
+  };
 }
 
-export default function Post({ post, preview }: PostProps): JSX.Element {
+export default function Post({
+  post,
+  preview,
+  pagination,
+}: PostProps): JSX.Element {
   const router = useRouter();
 
   const commentsSection = useRef<HTMLDivElement>(null);
@@ -68,6 +82,14 @@ export default function Post({ post, preview }: PostProps): JSX.Element {
   }, [post]);
 
   useEffect(() => {
+    const [hasScript] = Array.from(
+      commentsSection?.current.getElementsByTagName('script')
+    );
+
+    if (hasScript) {
+      commentsSection?.current.removeChild(hasScript);
+    }
+
     const utteranceScript = document.createElement('script');
 
     utteranceScript.src = 'https://utteranc.es/client.js';
@@ -78,7 +100,7 @@ export default function Post({ post, preview }: PostProps): JSX.Element {
     utteranceScript.setAttribute('theme', 'github-dark');
 
     commentsSection.current?.appendChild(utteranceScript);
-  }, []);
+  }, [post]);
 
   return (
     <>
@@ -141,6 +163,30 @@ export default function Post({ post, preview }: PostProps): JSX.Element {
             ))}
           </main>
 
+          <hr />
+
+          {pagination && (
+            <section className={styles.postPagination}>
+              {pagination.prevPage && (
+                <span>
+                  {pagination.prevPage.title}
+                  <Link href={pagination.prevPage.href}>
+                    <a>Post anterior</a>
+                  </Link>
+                </span>
+              )}
+
+              {pagination.nextPage && (
+                <span className={styles.nextPage}>
+                  {pagination.nextPage.title}
+                  <Link href={pagination.nextPage.href}>
+                    <a>Próximo post</a>
+                  </Link>
+                </span>
+              )}
+            </section>
+          )}
+
           <footer ref={commentsSection} />
 
           {preview && (
@@ -179,7 +225,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
 
 export const getStaticProps: GetStaticProps = async ({
   params,
-  preview = null,
+  preview = false,
   previewData = {},
 }) => {
   const { slug } = params;
@@ -190,7 +236,7 @@ export const getStaticProps: GetStaticProps = async ({
   const response =
     preview && ref
       ? await prismic.getSingle('posts', { ref })
-      : (await prismic.getByUID('posts', String(slug), {})) || null;
+      : await prismic.getByUID('posts', String(slug), {});
 
   if (!response) {
     return {
@@ -215,10 +261,54 @@ export const getStaticProps: GetStaticProps = async ({
     },
   };
 
+  const {
+    results: [prevPage],
+  } = await prismic.query(
+    [
+      Prismic.predicates.at('document.type', 'posts'),
+      Prismic.predicates.dateBefore(
+        'document.first_publication_date',
+        post.first_publication_date
+      ),
+    ],
+    { pageSize: 1 }
+  );
+
+  const {
+    results: [nextPage],
+  } = await prismic.query(
+    [
+      Prismic.predicates.at('document.type', 'posts'),
+      Prismic.predicates.dateAfter(
+        'document.first_publication_date',
+        post.first_publication_date
+      ),
+    ],
+    { pageSize: 1 }
+  );
+
+  console.log(nextPage, prevPage);
+
+  const pagination = {
+    nextPage: nextPage
+      ? {
+          title: nextPage.data.title,
+          href: `/post/${nextPage.uid}`,
+        }
+      : null,
+    prevPage: prevPage
+      ? {
+          title: prevPage.data.title,
+          href: `/post/${prevPage.uid}`,
+        }
+      : null,
+  };
+
   return {
     props: {
       post,
       preview,
+      pagination: nextPage || prevPage ? pagination : null,
     },
   };
 };

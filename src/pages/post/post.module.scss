@@ -34,6 +34,42 @@
       }
     }
 
+    hr {
+      margin: 3.75rem 0 3rem;
+
+      border-color: var(--body);
+      border-bottom-width: 0;
+    }
+
+    section.postPagination {
+      display: flex;
+
+      margin-bottom: 5rem;
+
+      span {
+        a {
+          display: block;
+
+          margin-top: 0.25rem;
+
+          color: var(--highlight);
+          font-weight: 600;
+
+          transition: filter 0.2s;
+
+          &:hover {
+            filter: brightness(0.5);
+          }
+        }
+
+        &.nextPage {
+          margin-left: auto;
+
+          text-align: right;
+        }
+      }
+    }
+
     aside a {
       display: block;
 
