@@ -22,7 +22,8 @@ import commonStyles from '../../styles/common.module.scss';
 import styles from './post.module.scss';
 
 interface Post {
-  first_publication_date: string | null;
+  first_publication_date: string;
+  last_publication_date: string | null;
   data: {
     title: string;
     subtitle: string;
@@ -145,6 +146,17 @@ export default function Post({
               <span>
                 <FiClock /> {readTime ? `${readTime} min` : 'Tempo de leitura'}
               </span>
+
+              {post?.last_publication_date && (
+                <span className={styles.updated}>
+                  * editado em
+                  {format(
+                    new Date(post?.last_publication_date),
+                    " dd MMM yyyy', às' HH:mm",
+                    { locale: ptBR }
+                  )}
+                </span>
+              )}
             </div>
           </header>
 
@@ -248,6 +260,10 @@ export const getStaticProps: GetStaticProps = async ({
   const post = {
     uid: response.uid,
     first_publication_date: response.first_publication_date,
+    last_publication_date:
+      response.first_publication_date !== response.last_publication_date
+        ? response.last_publication_date
+        : null,
     data: {
       title: response.data.title,
       subtitle: response.data.subtitle,
@@ -258,6 +274,8 @@ export const getStaticProps: GetStaticProps = async ({
       content: response.data.content,
     },
   };
+
+  console.log(post);
 
   const {
     results: [prevPage],
@@ -272,8 +290,6 @@ export const getStaticProps: GetStaticProps = async ({
     after: response.id,
     orderings: '[document.first_publication_date]',
   });
-
-  console.log(nextPage, prevPage);
 
   const pagination = {
     nextPage: nextPage

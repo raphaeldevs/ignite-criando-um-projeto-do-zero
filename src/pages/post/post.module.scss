@@ -16,6 +16,14 @@
 
         color: var(--title);
       }
+
+      .updated {
+        display: block;
+
+        margin: 1rem 0 0;
+
+        font-style: italic;
+      }
     }
 
     main {
