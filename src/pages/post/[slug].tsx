@@ -82,12 +82,10 @@ export default function Post({
   }, [post]);
 
   useEffect(() => {
-    const [hasScript] = Array.from(
-      commentsSection?.current.getElementsByTagName('script')
-    );
+    const hasScript = commentsSection?.current.querySelector('.utterances');
 
     if (hasScript) {
-      commentsSection?.current.removeChild(hasScript);
+      hasScript.remove();
     }
 
     const utteranceScript = document.createElement('script');
@@ -263,29 +261,17 @@ export const getStaticProps: GetStaticProps = async ({
 
   const {
     results: [prevPage],
-  } = await prismic.query(
-    [
-      Prismic.predicates.at('document.type', 'posts'),
-      Prismic.predicates.dateBefore(
-        'document.first_publication_date',
-        post.first_publication_date
-      ),
-    ],
-    { pageSize: 1 }
-  );
+  } = await prismic.query([Prismic.predicates.at('document.type', 'posts')], {
+    after: response.id,
+    orderings: '[document.first_publication_date desc]',
+  });
 
   const {
     results: [nextPage],
-  } = await prismic.query(
-    [
-      Prismic.predicates.at('document.type', 'posts'),
-      Prismic.predicates.dateAfter(
-        'document.first_publication_date',
-        post.first_publication_date
-      ),
-    ],
-    { pageSize: 1 }
-  );
+  } = await prismic.query([Prismic.predicates.at('document.type', 'posts')], {
+    after: response.id,
+    orderings: '[document.first_publication_date]',
+  });
 
   console.log(nextPage, prevPage);
 
